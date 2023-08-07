@@ -1,10 +1,18 @@
 const express = require('express');
-const app = express();
-const cors = require('cors');
-require('dotenv').config();
+var cors = require('cors');
 const { MongoClient, ServerApiVersion } = require('mongodb');
+require('dotenv').config();
 
+const app = express();
 const port = process.env.PORT || 5000;
+// middleware
+const corsOptions = {
+    origin: '*',
+    credentials: true,
+    optionSuccessStatus: 200,
+}
+app.use(cors(corsOptions))
+app.use(express.json());
 
 
 const uri = `mongodb+srv://${process.env.DB_user}:${process.env.DB_password}@cluster0.2n6rtio.mongodb.net/?retryWrites=true&w=majority`;
@@ -22,6 +30,41 @@ async function run() {
     try {
         // Connect the client to the server	(optional starting in v4.7)
         client.connect();
+
+        // collection declaration
+        const userCollection = client.db('travel-community').collection('users');
+        const communityCollection = client.db('travel-community').collection('community');
+        const portsCollection = client.db('travel-community').collection('posts');
+
+        // user collection
+        app.get('/users', async (req, res) => {
+            const result = await userCollection.find().toArray();
+            return res.send(result)
+        });
+        app.get('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const query = { email: email };
+            const result = await userCollection.find(query).toArray();
+            return res.send(result);
+        });
+        app.put('/user', async (req, res) => {
+            const user = req.body;
+            const result = await userCollection.insertOne(user);
+            return res.send(result);
+        })
+
+        // community Collection
+        app.get('/communities',async(req,res)=>{
+            const result = await communityCollection.find().toArray();
+            return res.send(result);
+        })
+        app.put('/create-community', async (req, res) => {
+            const community = req.body;
+            const result = await communityCollection.insertOne(community);
+            return res.send(result);
+        })
+
+
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -33,7 +76,7 @@ async function run() {
 run().catch(console.dir);
 
 
-app.get('/', (res, req) => {
+app.get('/', (req, res) => {
     res.send("welcome Travel community");
 })
 app.listen(port, () => {
