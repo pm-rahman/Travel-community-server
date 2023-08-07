@@ -54,13 +54,18 @@ async function run() {
         })
 
         // community Collection
-        app.get('/communities',async(req,res)=>{
+        app.get('/communities', async (req, res) => {
             const result = await communityCollection.find().toArray();
             return res.send(result);
         })
-        app.get('/community/:id',async(req,res)=>{
+        app.get('/firstCommunity', async (req, res) => {
+            // const limit = parseInt(req.query.limit);
+            const result = await communityCollection.findOne();
+            return res.send(result);
+        })
+        app.get('/community/:id', async (req, res) => {
             const id = req.params.id;
-            const query = {_id: new ObjectId(id)};
+            const query = { _id: new ObjectId(id) };
             const result = await communityCollection.findOne(query);
             return res.send(result);
         })
@@ -69,15 +74,58 @@ async function run() {
             const result = await communityCollection.insertOne(community);
             return res.send(result);
         })
+        app.put('/join-member/:id', async (req, res) => {
+            const id = req.params.id;
+            const email = req.body.email;
+            const query = { _id: new ObjectId(id) };
+            const option = { upsert: true };
+            const updateDoc = {
+                $inc: { member: 1 },
+                $addToSet: { joinedEmail: email }
+            }
+            const result = await communityCollection.updateOne(query, updateDoc, option);
+            return res.send(result);
+        })
+        app.get('/check-member/:id', async (req, res) => {
+            const id = req.params.id;
+            const email = req.query.email;
+            const query = {
+                _id: new ObjectId(id),
+                joinedEmail: { $in: [email] }
+            };
+            console.log(email);
+            const result = await communityCollection.find(query).toArray();
+            if (result) {
+                return res.send(true);
+            }
+            return res.send(false)
+        })
+        app.put('/delete-member/:id', async (req, res) => {
+            const id = req.params.id;
+            const email = req.body.email;
+            const query = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $inc: { member: -1 },
+                $pull: { joinedEmail: email }
+            }
+            const result = await communityCollection.updateOne(query, updateDoc);
+            return res.send(result);
+        })
 
         // ports Collection
-        app.get('/posts/:id',async(req,res)=>{
+        app.get('/posts/:id', async (req, res) => {
             const id = req.params?.id;
-            const query = {CommunityId:id};
+            const query = { CommunityId: id };
             const result = await postsCollection.find(query).toArray();
             return res.send(result);
         });
-        app.put('/create-post',async(req,res)=>{
+        app.get('/post/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await postsCollection.findOne(query);
+            return res.send(result);
+        })
+        app.put('/create-post', async (req, res) => {
             const post = req.body;
             const result = await postsCollection.insertOne(post);
             return res.send(result);
