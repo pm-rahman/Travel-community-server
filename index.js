@@ -93,7 +93,6 @@ async function run() {
                 _id: new ObjectId(id),
                 joinedEmail: { $in: [email] }
             };
-            console.log(email);
             const result = await communityCollection.find(query).toArray();
             if (result) {
                 return res.send(true);
@@ -110,6 +109,29 @@ async function run() {
             }
             const result = await communityCollection.updateOne(query, updateDoc);
             return res.send(result);
+        })
+        app.put('/edit-community/:id', async (req, res) => {
+            const id = req.params.id;
+            const { phone, ProfilePhoto, coverPhoto, bio, trams } = req.body;
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    phone,
+                    ProfilePhoto,
+                    coverPhoto,
+                    bio,
+                    trams
+                }
+            }
+            const result = await communityCollection.updateOne(query, updateDoc);
+            return res.send(result);
+        })
+        app.delete('/delete-community/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await communityCollection.deleteOne(query);
+            const result2 = await postsCollection.deleteMany({CommunityId:id});
+            return res.send({...result,...result2});
         })
 
         // ports Collection
@@ -128,6 +150,26 @@ async function run() {
         app.put('/create-post', async (req, res) => {
             const post = req.body;
             const result = await postsCollection.insertOne(post);
+            return res.send(result);
+        })
+        app.put('/edit-post/:id', async (req, res) => {
+            const id = req.params.id;
+            const { postTitle, postCover, postText } = req.body;
+            const query = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    postTitle,
+                    postCover,
+                    postText
+                }
+            }
+            const result = await postsCollection.updateOne(query, updateDoc);
+            return res.send(result);
+        })
+        app.delete('/delete-post/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await postsCollection.deleteOne(query);
             return res.send(result);
         })
 
