@@ -1,6 +1,6 @@
 const express = require('express');
 var cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 
 const app = express();
@@ -34,7 +34,7 @@ async function run() {
         // collection declaration
         const userCollection = client.db('travel-community').collection('users');
         const communityCollection = client.db('travel-community').collection('community');
-        const portsCollection = client.db('travel-community').collection('posts');
+        const postsCollection = client.db('travel-community').collection('posts');
 
         // user collection
         app.get('/users', async (req, res) => {
@@ -58,12 +58,30 @@ async function run() {
             const result = await communityCollection.find().toArray();
             return res.send(result);
         })
+        app.get('/community/:id',async(req,res)=>{
+            const id = req.params.id;
+            const query = {_id: new ObjectId(id)};
+            const result = await communityCollection.findOne(query);
+            return res.send(result);
+        })
         app.put('/create-community', async (req, res) => {
             const community = req.body;
             const result = await communityCollection.insertOne(community);
             return res.send(result);
         })
 
+        // ports Collection
+        app.get('/posts/:id',async(req,res)=>{
+            const id = req.params?.id;
+            const query = {CommunityId:id};
+            const result = await postsCollection.find(query).toArray();
+            return res.send(result);
+        });
+        app.put('/create-post',async(req,res)=>{
+            const post = req.body;
+            const result = await postsCollection.insertOne(post);
+            return res.send(result);
+        })
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
