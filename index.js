@@ -6,12 +6,12 @@ require('dotenv').config();
 const app = express();
 const port = process.env.PORT || 5000;
 // middleware
-const corsOptions = {
-    origin: '*',
-    credentials: true,
-    optionSuccessStatus: 200,
-}
-app.use(cors(corsOptions))
+// const corsOptions = {
+//     origin: '*',
+//     credentials: true,
+//     optionSuccessStatus: 200,
+// }
+app.use(cors());
 app.use(express.json());
 
 
@@ -69,6 +69,19 @@ async function run() {
             const result = await communityCollection.findOne(query);
             return res.send(result);
         })
+        app.get('/check-member/:id', async (req, res) => {
+            const id = req.params.id;
+            const email = req.query.email;
+            const query = {
+                _id: new ObjectId(id),
+                joinedEmail: { $in: [email] }
+            };
+            const result = await communityCollection.find(query).toArray();
+            if (result.length > 0) {
+                return res.send(true);
+            }
+            return res.send(false);
+        })
         app.put('/create-community', async (req, res) => {
             const community = req.body;
             const result = await communityCollection.insertOne(community);
@@ -86,19 +99,7 @@ async function run() {
             const result = await communityCollection.updateOne(query, updateDoc, option);
             return res.send(result);
         })
-        app.get('/check-member/:id', async (req, res) => {
-            const id = req.params.id;
-            const email = req.query.email;
-            const query = {
-                _id: new ObjectId(id),
-                joinedEmail: { $in: [email] }
-            };
-            const result = await communityCollection.find(query).toArray();
-            if (result) {
-                return res.send(true);
-            }
-            return res.send(false)
-        })
+
         app.put('/delete-member/:id', async (req, res) => {
             const id = req.params.id;
             const email = req.body.email;
@@ -126,15 +127,8 @@ async function run() {
             const result = await communityCollection.updateOne(query, updateDoc);
             return res.send(result);
         })
-        app.delete('/delete-community/:id', async (req, res) => {
-            const id = req.params.id;
-            const query = { _id: new ObjectId(id) };
-            const result = await communityCollection.deleteOne(query);
-            const result2 = await postsCollection.deleteMany({CommunityId:id});
-            return res.send({...result,...result2});
-        })
 
-        // ports Collection
+        // posts Collection
         app.get('/posts/:id', async (req, res) => {
             const id = req.params?.id;
             const query = { CommunityId: id };
@@ -171,6 +165,16 @@ async function run() {
             const query = { _id: new ObjectId(id) };
             const result = await postsCollection.deleteOne(query);
             return res.send(result);
+        })
+
+        // More than one collection
+
+        app.delete('/delete-community/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await communityCollection.deleteOne(query);
+            const result2 = await postsCollection.deleteMany({ CommunityId: id });
+            return res.send({ ...result, ...result2 });
         })
 
         // Send a ping to confirm a successful connection
